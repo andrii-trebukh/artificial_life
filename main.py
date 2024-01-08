@@ -1,11 +1,9 @@
 from random import choice, randint
-
 from al_world import World, Ball
 
 
-
 def main():
-    
+        
     world = World()
 
     max_x, max_y = world.max_coord
