@@ -1,13 +1,14 @@
 #!/bin/python3
 
-from random import choice, randint
-from al_world import World, Ball, Cell, Rock, Energy
+from random import randint
+from al_world import World
+from al_entities import Cell, Rock
 
 
 def main():
         
     # world = World((1900,900))
-    world = World((1024,768))
+    world = World((400,200))
 
     # build the perimeter wall
     max_x, max_y = world.max_coord
@@ -37,7 +38,7 @@ def main():
             genome = []
             
 
-            for j in range(108):
+            for j in range(109):
                 genome.append(randint(0, 100))
             
             genome[100] = startpoint
