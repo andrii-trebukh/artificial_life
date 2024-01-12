@@ -11,7 +11,8 @@ class World():
             self,
             size: tuple = (640, 480),
             bg_color: tuple | int = 0x000000,
-            sun_level: int = 1
+            sun_level: int = 1,
+            scale: int = 1
     ):
 
         pygame.init()
@@ -19,7 +20,12 @@ class World():
         pygame.display.set_icon(logo)
         pygame.display.set_caption("Artificial life simulator")
         
-        self.screen = pygame.display.set_mode(size)
+        self.scale = scale
+        info_bar_height = 5 * 14
+        width, height = size
+        width *= scale
+        height = height * scale + info_bar_height
+        self.screen = pygame.display.set_mode((width, height))
         self.screen.fill(bg_color)
         pygame.display.flip()
         self.entities = {}
@@ -35,14 +41,15 @@ class World():
         self.go_life = False
         self.step_by_step = False
 
-        max_x = self.screen.get_width() - 1
-        max_y = self.screen.get_height() - 1 - 5 * 14
+        max_x = size[0] - 1
+        max_y = size[1] - 1
         self.max_coord = (max_x, max_y)
 
         self.total_life_cells = 0
         self.total_nolife_objects = 0
 
-        info_bar_height = 5 * 14
+        self.pixel_surface = pygame.Surface((scale, scale))
+
         self.info_bar = InfoBar(
             self.screen,
             0,
@@ -61,11 +68,15 @@ class World():
             self,
             coords: tuple,
             color: int = 0xFFFFFF
-    ):
-        pixel_array = pygame.PixelArray(self.screen)
+    ): 
         x, y = coords
-        pixel_array[x, y] = color
-        pixel_array.close()
+        x *= self.scale
+        y *= self.scale
+        # pixel_array = pygame.PixelArray(self.screen)
+        # pixel_array[x, y] = color
+        # pixel_array.close()
+        self.pixel_surface.fill(color)
+        self.screen.blit(self.pixel_surface, (x, y))
         
     def get_id(self):
         entity_id = self.next_entity_id
@@ -144,8 +155,10 @@ class World():
                 self.total_nolife_objects = 0
 
             if not self.go_life:
-                mouse = pygame.mouse.get_pos()
-                entity = self.who_is_there(mouse)
+                x, y = pygame.mouse.get_pos()
+                x //= self.scale
+                y //= self.scale
+                entity = self.who_is_there((x, y))
                 if entity is None:
                     self.info_bar.print_text(1, None)
                 else:

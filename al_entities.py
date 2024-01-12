@@ -115,12 +115,12 @@ class Cell(Entity):
         # 105 - % of energy remaining after cell division
         self.min_energy_division = 500 + self.genome[106]# 106 - min energy level cell division
         # 107 - mutation probability, %
-        self.breed_each = 10 + self.genome[108] + randint(0, 10)# 108 - breed each n move
+        # self.breed_each = 10 + self.genome[108] + randint(0, 10)# 108 - breed each n move
         self.len_genome = len(self.genome) - 1
 
-        self.breed_cost = 10
+        self.breed_cost = self.min_energy_division // 3
         
-        self.count_to_breed = 0
+        # self.count_to_breed = 0
 
         if self.energy > self.max_energy:
             self.energy = self.max_energy
@@ -168,30 +168,10 @@ class Cell(Entity):
                     f"Cell division energy %: {self.genome[105]}",
                     f"Min cell division energy: {self.min_energy_division}",
                     f"mutation probability, %: {self.genome[107]}",
-                    f"breed each n move: {self.breed_each}"
+                    # f"breed each n move: {self.breed_each}"
                 )
             )
         )
-        
-        
-        
-        # ", ".join(
-        #     (
-        #         f"Start: {entity.genome[101]}",
-        #         f"Ttl: {entity.genome[102] * 10}",
-        #         f"Max energy: {entity.genome[103] * 10}",
-        #         f"Min energy: {entity.genome[104] + 10}"
-        #     )
-        # )
-        # self.info_bar.print_text(3, output)
-        # output = ", ".join(
-        #     (
-        #         f"Cell division energy %: {entity.genome[105]}",
-        #         f"Min cell division energy: {entity.genome[106]}",
-        #         f"mutation probability, %: {entity.genome[107]}",
-        #         f"breed each n move: {entity.genome[108]}"
-        #     )
-        # print(output)
         print(self)
 
     def next_gen_addr(self):
@@ -290,13 +270,10 @@ class Cell(Entity):
 
     # @command_handler(7, commands)
     def breed(self):
-        # print("breed!")
         if self.energy < self.min_energy_division:
             # self.ttl -= 1
             return False
         
-        # tries = 10
-        # while True:
         breed_direction = randint(0, 7)
         x, y = self.coord
         dx, dy = self.directions[breed_direction]
@@ -305,33 +282,29 @@ class Cell(Entity):
         if check is not None:
             # self.ttl -= 1
             return False
-        # if breed_direction != self.orientation and \
-        # check is None:
-        #     break
-            # if tries == 0:
-            #     self.ttl -= 1
-            #     return True
-            # tries -= 1
         
         if randint(0, 100) <= self.genome[107]:
             new_genome = self.make_mutant()
-            color = (
-                randint(80, 255),
-                randint(80, 255),
-                randint(80, 255)
+            color = list(self.color)
+            change_color = randint(0, 2)
+            change_color_val = randint(
+                color[change_color] - 40,
+                color[change_color] + 40
             )
+            if change_color_val > 255:
+                change_color_val = 255
+            elif change_color_val < 0:
+                change_color_val = 0
+            color[change_color] = change_color_val
+            color = tuple(color)
         else:
             new_genome = self.genome
             color = self.color
 
         self.energy -= self.breed_cost
-        # print(self.energy)
         remaining_energy = self.energy * self.genome[105] // 100
         new_energy = self.energy - remaining_energy
         self.energy = remaining_energy
-        # print(self.energy)
-        # print(new_energy)
-        # print()
 
         cell = Cell(
             self.world,
@@ -397,17 +370,19 @@ class Cell(Entity):
         
         self.world.total_life_cells += 1
         
-        self.count_to_breed += 1
-        if self.count_to_breed == self.breed_each:
-            self.count_to_breed = 0
-            if self.breed():
-                # self.consume_energy()
-                return
+        if self.breed():
+            return
+        # self.count_to_breed += 1
+        # if self.count_to_breed == self.breed_each:
+        #     self.count_to_breed = 0
+        #     if self.breed():
+        #         # self.consume_energy()
+        #         return
 
         avail_commands = self.commands.keys()
         self.gen_addr = self.genome_start
         # end_move = None
-        for i in range(100):
+        for i in range(102):
             gen = self.genome[self.gen_addr]
             if gen in avail_commands:
                 if self.commands[gen](self):

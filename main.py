@@ -8,7 +8,7 @@ from al_entities import Cell, Rock
 def main():
         
     # world = World((1900,900))
-    world = World((400,200))
+    world = World((400,200), scale = 4)
 
     # build the perimeter wall
     max_x, max_y = world.max_coord
