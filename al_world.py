@@ -1,8 +1,9 @@
-import gc
+# import gc
 from random import randint
-from time import sleep
-from typing import Any
+# from time import sleep
+# from typing import Any
 import pygame
+from al_entities import Cell, Energy, Geyser
 from info_bar import InfoBar
 
 
@@ -27,7 +28,7 @@ class World():
         height = height * scale + info_bar_height
         self.screen = pygame.display.set_mode((width, height))
         self.screen.fill(bg_color)
-        pygame.display.flip()
+        # pygame.display.flip()
         self.entities = {}
         self.collide_list = {}
         self.remove_entities = []
@@ -35,8 +36,10 @@ class World():
         self.bg_color = bg_color
 
         self.sun_level = sun_level
-        self.sun = False        
+        self.sun = True        
         self.entropy = True
+        self.geyser = True
+        self.rain = True
 
         self.go_life = False
         self.step_by_step = False
@@ -60,9 +63,14 @@ class World():
         )
         self.info_bar.assign_button(0, "Go", self.start_pause)
         self.info_bar.assign_button(1, "Step", self.step_forward)
+        self.info_bar.assign_button(4, "Add geysers", self.add_geysers)
+        self.info_bar.assign_button(5, "Rm geysers", self.rm_geysers)
+        self.info_bar.assign_button(8, "Add life", self.add_life)
 
         self.entropy_toggle()
         self.sun_toggle()
+        self.geyser_toggle()
+        self.rain_toggle()
         
     def draw_pixel(
             self,
@@ -126,7 +134,61 @@ class World():
         self.entropy = not self.entropy
         msg = "Off entropy" if self.entropy else "On entropy"
         self.info_bar.assign_button(2, msg, self.entropy_toggle)
+
+    def geyser_toggle(self):
+        self.geyser = not self.geyser
+        msg = "Off geysers" if self.geyser else "On geysers"
+        self.info_bar.assign_button(7, msg, self.geyser_toggle)
     
+    def rain_toggle(self):
+        self.rain = not self.rain
+        msg = "Off rain" if self.rain else "On rain"
+        self.info_bar.assign_button(6, msg, self.rain_toggle)
+
+    def rainy(self, drop_energy=10000):
+        max_x, max_y = self.max_coord
+        x = randint(0, max_x)
+        y = randint(0, max_y)
+        if self.who_is_there((x, y)) is None:
+            energy = Energy(self, self.get_id(), (x, y), drop_energy)
+            self.add_entity(energy)
+    
+    def add_geysers(self):
+        i = 10
+        max_x, max_y = self.max_coord
+        while i:
+            x = randint(0, max_x)
+            y = randint(0, max_y)
+            if self.who_is_there((x, y)) is None:
+                gayser = Geyser(self, self.get_id(), (x, y))
+                self.add_entity(gayser)
+            i -= 1
+
+    def rm_geysers(self):
+        for entity in self.entities.values():
+            if entity.name == "Geyser":
+                self.remove_entity(entity)
+    
+    def add_life(self):
+        i = 1000
+        while i:
+            max_x, max_y = self.max_coord
+            x = randint(0, max_x)
+            y = randint(0, max_y)
+            if self.who_is_there((x, y)) is None:
+                r = randint(80, 255)
+                g = randint(80, 255)
+                b = randint(80, 255)
+                orientation = randint(0,7)
+                genome = []
+                for j in range(109):
+                    genome.append(randint(0, 100))
+                genome[100] = randint(0, 99)
+                energy = genome[103] * 10
+                cell = Cell(self, self.get_id(), (x, y), (r, g, b), genome, energy, orientation)
+                self.add_entity(cell)
+            i -= 1
+
     def loop(self):
 
         running = True
@@ -141,6 +203,8 @@ class World():
             self.info_bar()
 
             if self.go_life:
+                if self.rain:
+                    self.rainy()
                 keys = list(self.entities.keys())
                 for key in keys:
                     self.entities[key]()
