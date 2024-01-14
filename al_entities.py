@@ -79,6 +79,17 @@ class Entity():
             _, check = sorted(energy_entities.items())[0]
             check.energy += delta
             self.energy = self.max_energy
+            return
+        for orientation in orientation_order:
+            name, check, coord = self.check_move(orientation)
+            if name == "Cell":
+                self.world.remove_entity(check)
+                energy = Energy(self.world, self.world.get_id(), coord, delta)
+                self.world.add_entity(energy)
+                self.energy = self.max_energy
+                return
+        
+
 
     def print_info(self):
         print(self)
@@ -180,11 +191,11 @@ class Cell(Entity):
         # if self.energy > self.max_energy:
         #     self.energy = self.max_energy
 
-    def consume_energy(self):
-        # print(self.energy)
-        value = 1 + self.energy // 100
-        self.energy -= value
-        # print(self.energy)
+    # def consume_energy(self):
+    #     # print(self.energy)
+    #     value = 1 + self.energy // 100
+    #     self.energy -= value
+    #     # print(self.energy)
     
     def eat_entity(self, entity):
         self.energy += entity.energy
@@ -261,18 +272,6 @@ class Cell(Entity):
 
             return inner
         return wrapper
-    
-    @command_handler(0, commands)
-    def move(self):
-        
-        name, _, new_coord = self.check_move()
-
-        if name is None:
-            self.move_to(new_coord)
-        
-        self.consume_energy()
-        self.ttl -= 1
-        return True
 
     def breed(self):
         if self.energy < self.min_energy_division:
@@ -335,17 +334,33 @@ class Cell(Entity):
         if self.gen_addr == -1:
             self.gen_addr = 100
 
+    @command_handler(0, commands)
+    def move(self):
+        
+        name, _, new_coord = self.check_move()
+
+        if name is None:
+            self.move_to(new_coord)
+        
+        # self.consume_energy()
+        # value = 1 + self.energy // 100
+        self.energy -= 1 + self.energy // 100
+        self.ttl -= 1
+        return True
+
     @command_handler(1, commands)
     def clockwise(self):
         self.orientation += 1
         if self.orientation > 7:
             self.orientation = 0
+        self.energy -= 1
 
     @command_handler(2, commands)
     def cclockwise(self):
         self.orientation -= 1
         if self.orientation < 0:
             self.orientation = 7
+        self.energy -= 1
     
     @command_handler(3, commands)
     def set_new_start(self):
@@ -358,6 +373,7 @@ class Cell(Entity):
         name, _, _ = self.check_move()
         if name in ("Energy", "Cell", None):
             self.go_to_genome_addr()
+        self.energy -= 1
     
     @command_handler(5, commands)
     def check_food(self):
@@ -365,6 +381,7 @@ class Cell(Entity):
         name, _, _ = self.check_move()
         if name == "Energy":
             self.go_to_genome_addr()
+        self.energy -= 1
 
     @command_handler(6, commands)
     def check_cell(self):
@@ -372,6 +389,7 @@ class Cell(Entity):
         name, _, _ = self.check_move()
         if name == "Cell":
             self.go_to_genome_addr()
+        self.energy -= 1
 
     @command_handler(7, commands)
     def check_relative(self):
@@ -386,6 +404,7 @@ class Cell(Entity):
                 if diff == 2:
                     return
         self.go_to_genome_addr()
+        self.energy -= 1
     
     @command_handler(8, commands)
     def eat_energy(self):
@@ -393,6 +412,7 @@ class Cell(Entity):
             name, check, _ = self.check_move()
             if name == "Energy":
                 self.eat_entity(check)
+        self.energy -= 1 + self.energy // 100
         self.ttl -= 1
         return True
     
@@ -402,6 +422,7 @@ class Cell(Entity):
             name, check, _ = self.check_move()
             if name == "Cell":
                 self.eat_entity(check)
+        self.energy -= 1 + self.energy // 100
         self.ttl -= 1
         return True
 
@@ -409,6 +430,7 @@ class Cell(Entity):
     def make_photosynthesis(self):
         if self.world.sun and self.energy < self.max_energy:
             self.energy += self.world.sun_level
+        # self.energy -= 1 + self.energy // 100
         self.ttl -= 1
         return True
     
