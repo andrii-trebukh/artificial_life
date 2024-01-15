@@ -66,6 +66,7 @@ class World():
         self.info_bar.assign_button(4, "Add geysers", self.add_geysers)
         self.info_bar.assign_button(5, "Rm geysers", self.rm_geysers)
         self.info_bar.assign_button(8, "Add life", self.add_life)
+        self.info_bar.assign_button(9, "Clear", self.rm_all)
 
         self.entropy_toggle()
         self.sun_toggle()
@@ -169,6 +170,11 @@ class World():
             if entity.name == "Geyser":
                 self.remove_entity(entity)
     
+    def rm_all(self):
+        for entity in self.entities.values():
+            if entity.name != "Rock":
+                self.remove_entity(entity)
+    
     def add_life(self):
         i = 1000
         while i:
@@ -208,15 +214,20 @@ class World():
                 keys = list(self.entities.keys())
                 for key in keys:
                     self.entities[key]()
-                for remove_entity in self.remove_entities:
-                    self.entities.pop(remove_entity)
-                self.remove_entities = []
+                # for remove_entity in self.remove_entities:
+                #     self.entities.pop(remove_entity)
+                # self.remove_entities = []
             
                 self.info_bar.print_text(0, f"Total objects: {self.total_life_cells + self.total_nolife_objects}")
                 self.info_bar.print_text(2, f"Total life cells: {self.total_life_cells}")
                 self.info_bar.print_text(3, f"No life objects: {self.total_nolife_objects}")
                 self.total_life_cells = 0
                 self.total_nolife_objects = 0
+            
+            if self.remove_entities:
+                for remove_entity in self.remove_entities:
+                    self.entities.pop(remove_entity)
+                self.remove_entities = []
 
             if not self.go_life:
                 x, y = pygame.mouse.get_pos()
