@@ -122,7 +122,7 @@ class InfoBar():
         text_height = 14
         text_width = self.screen.get_width() - 1 - button_width
 
-        for n in range(1, 4):
+        for n in range(1, 5):
             for i in range(4, 0, -1):
                 button = Button(
                     self.screen,

@@ -135,7 +135,7 @@ class Energy(Entity):
             coord,
             energy
     ):
-        super().__init__(world, id, coord, 0xFFFFFF, "Energy",energy = energy)
+        super().__init__(world, id, coord, 0xFFFFFF, "Energy",energy=energy)
     
     def __call__(self):
         if self.inactive:
@@ -164,14 +164,15 @@ class Cell(Entity):
                  color,
                  genome,
                  energy,
-                 orientation
+                 orientation,
+                 genome_start = None
     ):
-        super().__init__(world, id, coord, color, "Cell", genome, energy)
+        super().__init__(world, id, coord, color, "Cell", genome)
         self.orientation = orientation
         
         # genome: [---instructions index from 0 to 100---] + [cell property]
         # where cel property is:
-        self.genome_start = self.genome[101] # genome start address
+        self.genome_start = genome_start if genome_start else self.genome[101] # genome start address
         self.ttl = self.genome[102] * 10 # cell time to live *10, moves
         self.max_energy = self.genome[103] * 10 # max cell energy *10
         self.min_energy = 10 + self.genome[104] # min cell energy 10 + x
@@ -179,6 +180,7 @@ class Cell(Entity):
         self.min_energy_division = 500 + self.genome[106]# 106 - min energy level cell division
         # 107 - mutation probability, %
         # self.breed_each = 10 + self.genome[108] + randint(0, 10)# 108 - breed each n move
+        self.energy = self.max_energy if energy is None else energy
         self.len_genome = len(self.genome) - 1
 
         self.breed_cost = self.min_energy_division // 3
