@@ -23,7 +23,7 @@ class World():
         logo = pygame.image.load("logo32x32.png")
         pygame.display.set_icon(logo)
         pygame.display.set_caption("Artificial life simulator")
-        
+
         self.scale = scale
         info_bar_height = 5 * 14
         width, height = size
@@ -39,7 +39,7 @@ class World():
         self.bg_color = bg_color
 
         self.sun_level = sun_level
-        self.sun = True        
+        self.sun = True
         self.entropy = True
         self.geyser = True
         self.rain = True
@@ -83,12 +83,12 @@ class World():
         self.sun_toggle()
         self.geyser_toggle()
         self.rain_toggle()
-        
+
     def draw_pixel(
             self,
             coords: tuple,
             color: int = 0xFFFFFF
-    ): 
+    ):
         x, y = coords
         x *= self.scale
         y *= self.scale
@@ -97,12 +97,12 @@ class World():
         # pixel_array.close()
         self.pixel_surface.fill(color)
         self.screen.blit(self.pixel_surface, (x, y))
-        
+
     def get_id(self):
         entity_id = self.next_entity_id
         self.next_entity_id += 1
         return entity_id
-    
+
     def add_entity(self, new_entity):
         entity_id = new_entity.id
         coord = new_entity.coord
@@ -118,14 +118,14 @@ class World():
         self.remove_entities.append(entity_id)
         self.collide_list.pop(coord)
         self.draw_pixel(coord, self.bg_color)
-    
+
     def who_is_there(self, coord: tuple):
         entity_id = self.collide_list.get(coord)
         if entity_id is None:
             return None
         else:
             return self.entities[entity_id]
-        
+
     def start_pause(self):
         self.go_life = not self.go_life
         text_button = "Pause" if self.go_life else "Go"
@@ -135,12 +135,12 @@ class World():
             self.info_bar.assign_button(10, "", None)
             self.info_bar.assign_button(11, "", None)
             self.clear_file_buttons()
-            
+
         else:
             self.info_bar.assign_button(1, "Step", self.step_forward)
             self.info_bar.assign_button(10, "Seve world", self.save_world)
             self.info_bar.assign_button(11, "Load world", self.load_world_init)
-    
+
     def step_forward(self):
         self.clear_file_buttons()
         self.step_by_step = True
@@ -160,7 +160,7 @@ class World():
         self.geyser = not self.geyser
         msg = "Off geysers" if self.geyser else "On geysers"
         self.info_bar.assign_button(7, msg, self.geyser_toggle)
-    
+
     def rain_toggle(self):
         self.rain = not self.rain
         msg = "Off rain" if self.rain else "On rain"
@@ -173,7 +173,7 @@ class World():
         if self.who_is_there((x, y)) is None:
             energy = Energy(self, self.get_id(), (x, y), drop_energy)
             self.add_entity(energy)
-    
+
     def add_geysers(self):
         self.clear_file_buttons()
         i = 10
@@ -190,12 +190,12 @@ class World():
         for entity in self.entities.values():
             if entity.name == "Geyser":
                 self.remove_entity(entity)
-    
+
     def rm_all(self):
         for entity in self.entities.values():
             if entity.name != "Rock":
                 self.remove_entity(entity)
-    
+
     def add_life(self):
         self.clear_file_buttons()
         i = 1000
@@ -207,7 +207,7 @@ class World():
                 r = randint(80, 255)
                 g = randint(80, 255)
                 b = randint(80, 255)
-                orientation = randint(0,7)
+                orientation = randint(0, 7)
                 genome = []
                 for j in range(109):
                     genome.append(randint(0, 100))
@@ -226,7 +226,7 @@ class World():
         }
         with open(path, "w") as fh:
             json.dump(save_dict, fh)
-    
+
     def file_up(self):
         if self.file_index == 0:
             return
@@ -264,7 +264,7 @@ class World():
         self.info_bar.assign_button(14, "v", self.file_down)
         self.info_bar.assign_button(12, "Load sample", self.load_sample)
         self.info_bar.print_text(4, self.files[self.file_index].name)
-    
+
     def file_list(self, start):
         self.files = []
         self.file_index = 0
@@ -287,7 +287,7 @@ class World():
         self.info_bar.assign_button(14, "v", self.file_down)
         self.info_bar.assign_button(12, "Load world", self.load_world)
         self.info_bar.print_text(4, self.files[self.file_index].name)
-    
+
     def fill_the_world(self, world_dict):
         self.rm_all()
         self.next_entity_id = world_dict.pop("id")
@@ -327,8 +327,8 @@ class World():
                     val["orientation"],
                     val["start"]
                 )
-            self.add_entity(entity)            
-    
+            self.add_entity(entity)
+
     def load_world(self):
         with open(self.files[self.file_index], "r") as fh:
             # try:
@@ -373,13 +373,12 @@ class World():
         with open(path, "w") as fh:
             json.dump(save_dict, fh, indent=4,)
 
-
     def loop(self):
 
         running = True
 
         mouse_pressed = False
-        
+
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -393,13 +392,13 @@ class World():
                 keys = list(self.entities.keys())
                 for key in keys:
                     self.entities[key]()
-            
+
                 self.info_bar.print_text(0, f"Total objects: {self.total_life_cells + self.total_nolife_objects}")
                 self.info_bar.print_text(2, f"Total life cells: {self.total_life_cells}")
                 self.info_bar.print_text(3, f"No life objects: {self.total_nolife_objects}")
                 self.total_life_cells = 0
                 self.total_nolife_objects = 0
-            
+
             if self.remove_entities:
                 for remove_entity in self.remove_entities:
                     self.entities.pop(remove_entity)
