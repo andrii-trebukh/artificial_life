@@ -122,15 +122,16 @@ class InfoBar():
         text_height = 14
         text_width = self.screen.get_width() - 1 - button_width
 
-        for i in range(4, 0, -1):
-            button = Button(
-                self.screen,
-                self.screen.get_width() - 1 - button_width,
-                self.screen.get_height() - (1 + button_height) * i,
-                button_width,
-                button_height
-            )
-            self.buttons.append(button)
+        for n in range(1, 5):
+            for i in range(4, 0, -1):
+                button = Button(
+                    self.screen,
+                    self.screen.get_width() - n * (1 + button_width),
+                    self.screen.get_height() - (1 + button_height) * i,
+                    button_width,
+                    button_height
+                )
+                self.buttons.append(button)
 
         for i in range(5, 0, -1):
             text = TextField(
