@@ -1,8 +1,7 @@
 #!/bin/python3
 
-from random import randint
 from al_world import World
-from al_entities import Cell, Rock, Geyser
+from al_entities import Rock
 
 
 def main():

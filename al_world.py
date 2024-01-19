@@ -6,7 +6,8 @@ from random import randint
 # from time import sleep
 # from typing import Any
 import pygame
-from al_entities import Cell, Energy, Geyser
+from al_entities import Energy, Geyser
+from al_cell import Cell
 from info_bar import InfoBar
 
 
@@ -192,9 +193,15 @@ class World():
                 self.remove_entity(entity)
 
     def rm_all(self):
-        for entity in self.entities.values():
+        for entity_key in sorted(self.entities.keys(), reverse=True):
+            entity = self.entities[entity_key]
             if entity.name != "Rock":
-                self.remove_entity(entity)
+                entity_id = entity.id
+                coord = entity.coord
+                self.collide_list.pop(coord)
+                self.entities.pop(entity_id)
+                self.draw_pixel(coord, self.bg_color)
+        self.next_entity_id = max(self.entities.keys()) + 1
 
     def add_life(self):
         self.clear_file_buttons()
@@ -208,18 +215,27 @@ class World():
                 g = randint(80, 255)
                 b = randint(80, 255)
                 orientation = randint(0, 7)
-                genome = []
-                for j in range(109):
-                    genome.append(randint(0, 100))
+                genome = [randint(0, 100) for _ in range(109)]
                 genome[100] = randint(0, 99)
-                # energy = genome[103] * 10
-                cell = Cell(self, self.get_id(), (x, y), (r, g, b), genome, None, orientation)
+                cell = Cell(
+                    self,
+                    self.get_id(),
+                    (x, y),
+                    (r, g, b),
+                    tuple(genome),
+                    None,
+                    orientation
+                )
                 self.add_entity(cell)
             i -= 1
 
+    @staticmethod
+    def file_path(start_with):
+        time_stamp = datetime.now().strftime("%Y.%m.%d-%H.%M.%S.%f")
+        return Path().joinpath(f"{start_with}-{time_stamp}.json")
+
     def save_sample(self):
-        time_stamp = datetime.now().strftime("%Y.%m.%d-%H:%M:%s")
-        path = Path().joinpath(f"sample-{time_stamp}.json")
+        path = self.file_path("sample")
         save_dict = {
             "color": self.focus_entity.color,
             "genome": self.focus_entity.genome,
@@ -258,20 +274,23 @@ class World():
         self.clear_file_buttons()
 
     def load_sample_init(self):
-        self.file_list("sample-")
-        self.clear_file_buttons()
-        self.info_bar.assign_button(13, "^", self.file_up)
-        self.info_bar.assign_button(14, "v", self.file_down)
-        self.info_bar.assign_button(12, "Load sample", self.load_sample)
-        self.info_bar.print_text(4, self.files[self.file_index].name)
+        self.file_list("sample-", "Load sample", self.load_sample)
 
-    def file_list(self, start):
+    def file_list(self, start, button_text, proc):
         self.files = []
         self.file_index = 0
         for file in Path().iterdir():
             if file.is_file() and file.name.startswith(start):
                 self.files.append(file)
         self.files.sort()
+        if not self.files:
+            self.info_bar.print_text(4, "No save files found")
+            return
+        self.clear_file_buttons()
+        self.info_bar.assign_button(13, chr(708), self.file_up)
+        self.info_bar.assign_button(14, chr(709), self.file_down)
+        self.info_bar.assign_button(12, button_text, proc)
+        self.info_bar.print_text(4, self.files[self.file_index].name)
 
     def clear_file_buttons(self):
         self.info_bar.assign_button(12, "", None)
@@ -281,48 +300,43 @@ class World():
         self.info_bar.print_text(4, None)
 
     def load_world_init(self):
-        self.file_list("world-")
-        self.clear_file_buttons()
-        self.info_bar.assign_button(13, "^", self.file_up)
-        self.info_bar.assign_button(14, "v", self.file_down)
-        self.info_bar.assign_button(12, "Load world", self.load_world)
-        self.info_bar.print_text(4, self.files[self.file_index].name)
+        self.file_list("world-", "Load world", self.load_world)
 
-    def fill_the_world(self, world_dict):
+    def fill_the_world(self, world_list):
         self.rm_all()
-        self.next_entity_id = world_dict.pop("id")
-        self.sun = not world_dict.pop("sun")
-        self.sun_level = world_dict.pop("sun_level")
-        self.entropy = not world_dict.pop("entropy")
-        self.geyser = not world_dict.pop("geyser")
-        self.rain = not world_dict.pop("rain")
+        world_settings = world_list.pop(0)
+        self.sun = not world_settings["sun"]
+        self.sun_level = world_settings["sun_level"]
+        self.entropy = not world_settings["entropy"]
+        self.geyser = not world_settings["geyser"]
+        self.rain = not world_settings["rain"]
 
         self.entropy_toggle()
         self.sun_toggle()
         self.geyser_toggle()
         self.rain_toggle()
 
-        for eid, val in world_dict.items():
+        for val in world_list:
             if val["name"] == "Geyser":
                 entity = Geyser(
                     self,
-                    eid,
+                    self.get_id(),
                     tuple(val["coord"])
                 )
             elif val["name"] == "Energy":
                 entity = Energy(
                     self,
-                    eid,
+                    self.get_id(),
                     tuple(val["coord"]),
                     val["energy"]
                 )
             elif val["name"] == "Cell":
                 entity = Cell(
                     self,
-                    eid,
+                    self.get_id(),
                     tuple(val["coord"]),
                     val["color"],
-                    val["genome"],
+                    tuple(int(gen) for gen in val["genome"].split(",")),
                     val["energy"],
                     val["orientation"],
                     val["start"]
@@ -331,29 +345,24 @@ class World():
 
     def load_world(self):
         with open(self.files[self.file_index], "r") as fh:
-            # try:
-            load_dict = json.load(fh)
-            self.fill_the_world(load_dict)
-            # except:
-            #     pass
+            load_list = json.load(fh)
+            self.fill_the_world(load_list)
         self.clear_file_buttons()
 
     def save_world(self):
-        time_stamp = datetime.now().strftime("%Y.%m.%d-%H:%M:%s")
-        path = Path().joinpath(f"world-{time_stamp}.json")
-        save_dict = {
-            "sun": self.sun,
-            "sun_level": self.sun_level,
-            "entropy": self.entropy,
-            "geyser": self.geyser,
-            "rain": self.rain,
-            "id": self.next_entity_id
+        path = self.file_path("world")
+        save_list = [
+            {
+                "sun": self.sun,
+                "sun_level": self.sun_level,
+                "entropy": self.entropy,
+                "geyser": self.geyser,
+                "rain": self.rain
             }
-        # entity_dict = {}
+        ]
         for entity in self.entities.values():
             if entity.name == "Rock":
                 continue
-            # id = entity.id
             entity_dict = {
                 "name": entity.name,
                 "coord": entity.coord,
@@ -366,12 +375,12 @@ class World():
                         "color": entity.color,
                         "orientation": entity.orientation,
                         "start": entity.genome_start,
-                        "genome": entity.genome
+                        "genome": ",".join(str(gen) for gen in entity.genome)
                     }
                 )
-            save_dict[entity.id] = entity_dict
+            save_list.append(entity_dict)
         with open(path, "w") as fh:
-            json.dump(save_dict, fh, indent=4,)
+            json.dump(save_list, fh, indent=4,)
 
     def loop(self):
 
@@ -393,9 +402,19 @@ class World():
                 for key in keys:
                     self.entities[key]()
 
-                self.info_bar.print_text(0, f"Total objects: {self.total_life_cells + self.total_nolife_objects}")
-                self.info_bar.print_text(2, f"Total life cells: {self.total_life_cells}")
-                self.info_bar.print_text(3, f"No life objects: {self.total_nolife_objects}")
+                self.info_bar.print_text(
+                    0,
+                    f"Total objects: "
+                    f"{self.total_life_cells + self.total_nolife_objects}"
+                )
+                self.info_bar.print_text(
+                    2,
+                    f"Total life cells: {self.total_life_cells}"
+                )
+                self.info_bar.print_text(
+                    3,
+                    f"No life objects: {self.total_nolife_objects}"
+                )
                 self.total_life_cells = 0
                 self.total_nolife_objects = 0
 
@@ -420,14 +439,16 @@ class World():
                         if entity.name == "Cell":
                             self.focus_entity = entity
                             self.clear_file_buttons()
-                            self.info_bar.assign_button(12, "Save sample", self.save_sample)
+                            self.info_bar.assign_button(
+                                12,
+                                "Save sample",
+                                self.save_sample
+                            )
                     else:
                         max_x, max_y = self.max_coord
                         if x <= max_x and y <= max_y:
                             self.focus_coord = (x, y)
-                            # self.clear_file_buttons()
                             self.load_sample_init()
-                            # self.info_bar.assign_button(12, "Load sample", self.load_sample_init)
 
                     mouse_pressed = True
                 elif not pygame.mouse.get_pressed()[0]:
