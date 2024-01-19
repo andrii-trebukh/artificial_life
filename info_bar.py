@@ -35,7 +35,11 @@ class Button():
 
     def button_activate(self, button_text, onclick_function):
         self.onclick_function = onclick_function
-        self.button_text_render = self.font.render(button_text, True, self.color_text)
+        self.button_text_render = self.font.render(
+            button_text,
+            True,
+            self.color_text
+        )
         self.button_text_rect = self.button_text_render.get_rect()
         self.button_text_rect.center = self.button_rect.center
 
