@@ -21,7 +21,7 @@ class Cell(Entity):
     def __init__(
             self,
             world,
-            id: int,
+            eid: int,
             coord,
             color,
             genome,
@@ -29,7 +29,7 @@ class Cell(Entity):
             orientation,
             genome_start=None
     ):
-        super().__init__(world, id, coord, color, "Cell", genome)
+        super().__init__(world, eid, coord, color, "Cell", genome)
         self.orientation = orientation
 
         # genome: [---instructions index from 0 to 100---] + [cell property]
@@ -62,6 +62,8 @@ class Cell(Entity):
         self.internal_counter = 0
         self.internal_counter_criteria = 100
 
+        self.gen_addr = None
+
     def eat_entity(self, entity):
         self.energy += entity.energy
         self.world.remove_entity(entity)
@@ -81,7 +83,7 @@ class Cell(Entity):
         for i in range(101):
             if i == self.genome_start:
                 color = "red"
-            elif self.genome[i] in commands.keys():
+            elif self.genome[i] in commands:
                 color = "yellow"
             else:
                 color = "white"
@@ -173,10 +175,6 @@ class Cell(Entity):
         self.ttl -= 1
         return True
 
-    def skip_move(self):
-        self.ttl -= 1
-        return True
-
     def go_to_genome_addr(self):
         self.gen_addr = self.genome[self.gen_addr] - 1
         if self.gen_addr == -1:
@@ -260,9 +258,14 @@ class Cell(Entity):
     @command_handler(9)
     def eat_energy(self):
         if self.energy < self.max_energy:
+            eatable_energy = self.max_energy - self.energy
             name, check, _ = self.check_move()
             if name == "Energy":
-                self.eat_entity(check)
+                if check.energy < eatable_energy:
+                    self.eat_entity(check)
+                else:
+                    check.energy -= eatable_energy
+                    self.energy += eatable_energy
         self.energy -= 1 + self.energy // 100
         self.ttl -= 1
         return True
@@ -308,8 +311,8 @@ class Cell(Entity):
 
         self.dump_energy()
 
-        if self.energy <= self.min_energy \
-                or self.ttl == 0 or self.energy > self.max_energy:
+        if self.energy > self.max_energy \
+                or self.energy <= self.min_energy or self.ttl == 0:
             self.world.remove_entity(self)
             if self.energy <= 0:
                 return
@@ -332,13 +335,13 @@ class Cell(Entity):
 
         self.gen_addr = self.genome_start
 
-        for i in range(102):
+        for _ in range(102):
             gen = self.genome[self.gen_addr]
-            if gen in commands.keys():
+            if gen in commands:
                 if commands[gen](self):
                     return
             self.next_gen_addr()
-        self.skip_move()
+        self.ttl -= 1
 
     def __str__(self):
         return f"{self.name}, Id: {self.id}, Energy: {self.energy}, "\

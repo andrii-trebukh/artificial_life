@@ -16,7 +16,7 @@ class Entity():
     def __init__(
             self,
             world,
-            id: int,
+            eid: int,
             coord: tuple = (0, 0),
             color: int = 0xFFFFFF,
             name: int | None = None,
@@ -24,7 +24,7 @@ class Entity():
             energy: int = 0
     ):
         self.name = name
-        self.id = id
+        self.id = eid
         self.color = color
         self.coord = coord
         self.world = world
@@ -60,7 +60,7 @@ class Entity():
         if self.energy <= self.max_energy:
             return
         delta = self.energy - self.max_energy
-        orientation_order = list(range(8))
+        orientation_order = list(self.directions.keys())
         shuffle(orientation_order)
         for orientation in orientation_order:
             name, _, coord = self.check_move(orientation)
@@ -72,21 +72,25 @@ class Entity():
         energy_entities = {}
         for orientation in orientation_order:
             name, check, _ = self.check_move(orientation)
-            if name == "Energy":
+            if name in ("Energy", "Cell"):
                 energy_entities[check.energy] = check
+
         if energy_entities:
             _, check = sorted(energy_entities.items())[0]
-            check.energy += delta
-            self.energy = self.max_energy
-            return
-        for orientation in orientation_order:
-            name, check, coord = self.check_move(orientation)
-            if name == "Cell":
+            if check.name == "Energy":
+                check.energy += delta
+                self.energy = self.max_energy
+            else:
+                energy = Energy(
+                    self.world,
+                    self.world.get_id(),
+                    check.coord,
+                    delta + check.energy
+                )
                 self.world.remove_entity(check)
-                energy = Energy(self.world, self.world.get_id(), coord, delta)
                 self.world.add_entity(energy)
                 self.energy = self.max_energy
-                return
+            return
 
     def print_info(self):
         print(self)
@@ -102,21 +106,21 @@ class Rock(Entity):
     def __init__(
             self,
             world,
-            id: int,
+            eid: int,
             coord: tuple = (0, 0),
     ):
-        super().__init__(world, id, coord, 0xff0000, "Rock")
+        super().__init__(world, eid, coord, 0xff0000, "Rock")
 
 
 class Geyser(Entity):
     def __init__(
             self,
             world,
-            id: int,
+            eid: int,
             coord: tuple = (0, 0),
             prod_energy: int = 500
     ):
-        super().__init__(world, id, coord, 0xff0000, "Geyser")
+        super().__init__(world, eid, coord, 0xff0000, "Geyser")
         self.prod_energy = prod_energy
 
     def __call__(self):
@@ -129,11 +133,11 @@ class Energy(Entity):
     def __init__(
             self,
             world,
-            id: int,
+            eid: int,
             coord,
             energy
     ):
-        super().__init__(world, id, coord, 0xFFFFFF, "Energy", energy=energy)
+        super().__init__(world, eid, coord, 0xFFFFFF, "Energy", energy=energy)
 
     def __call__(self):
         if self.inactive:

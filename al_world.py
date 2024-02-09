@@ -1,10 +1,7 @@
-# import gc
 from datetime import datetime
 import json
 from pathlib import Path
 from random import randint
-# from time import sleep
-# from typing import Any
 import pygame
 from al_entities import Energy, Geyser
 from al_cell import Cell
@@ -32,7 +29,6 @@ class World():
         height = height * scale + info_bar_height
         self.screen = pygame.display.set_mode((width, height))
         self.screen.fill(bg_color)
-        # pygame.display.flip()
         self.entities = {}
         self.collide_list = {}
         self.remove_entities = []
@@ -93,9 +89,6 @@ class World():
         x, y = coords
         x *= self.scale
         y *= self.scale
-        # pixel_array = pygame.PixelArray(self.screen)
-        # pixel_array[x, y] = color
-        # pixel_array.close()
         self.pixel_surface.fill(color)
         self.screen.blit(self.pixel_surface, (x, y))
 
@@ -124,8 +117,7 @@ class World():
         entity_id = self.collide_list.get(coord)
         if entity_id is None:
             return None
-        else:
-            return self.entities[entity_id]
+        return self.entities[entity_id]
 
     def start_pause(self):
         self.go_life = not self.go_life
@@ -240,7 +232,7 @@ class World():
             "color": self.focus_entity.color,
             "genome": self.focus_entity.genome,
         }
-        with open(path, "w") as fh:
+        with open(path, mode="w", encoding="utf-8") as fh:
             json.dump(save_dict, fh)
 
     def file_up(self):
@@ -256,7 +248,7 @@ class World():
         self.info_bar.print_text(4, self.files[self.file_index].name)
 
     def load_sample(self):
-        with open(self.files[self.file_index], "r") as fh:
+        with open(self.files[self.file_index], mode="r", encoding="utf-8") as fh:
             try:
                 load_dict = json.load(fh)
                 entity = Cell(
@@ -344,7 +336,7 @@ class World():
             self.add_entity(entity)
 
     def load_world(self):
-        with open(self.files[self.file_index], "r") as fh:
+        with open(self.files[self.file_index], mode="r", encoding="utf-8") as fh:
             load_list = json.load(fh)
             self.fill_the_world(load_list)
         self.clear_file_buttons()
@@ -379,7 +371,7 @@ class World():
                     }
                 )
             save_list.append(entity_dict)
-        with open(path, "w") as fh:
+        with open(path, mode="w", encoding="utf-8") as fh:
             json.dump(save_list, fh, indent=4,)
 
     def loop(self):
